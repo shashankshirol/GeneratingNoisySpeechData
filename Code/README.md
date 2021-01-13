@@ -1,4 +1,4 @@
-## How to use `clean_extract.py`:
+## How to use `pretty_extract.py`:
 
 - `python clean_extract.py -i <input_file> -c <1|0> -r <1|0> -b <int>`
 - `-c is to denote if the input audio is the clean variant or not; decides whether phase info is stored or not.`
