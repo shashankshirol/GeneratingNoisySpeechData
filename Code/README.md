@@ -5,6 +5,10 @@
 - `-r is to denote if running in reconstruction mode (from spec to audio) or not`
 - `-b is number of byte representation for the spectrogram image; default is 1.`
 
-*Note: when going from audio to spectrogram: input file is an audio;
+##Note: 
 
-when going from spectrogram to audio: input file is an image;*
+**When going from:**
+
+- Audioudio to Spectrogram: input file is an audio.
+- Spectrogram to Audio: input file is an image.
+
