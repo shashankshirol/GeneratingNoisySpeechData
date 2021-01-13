@@ -9,6 +9,6 @@
 
 **When going from:**
 
-- Audioudio to Spectrogram: input file is an audio.
+- Audio to Spectrogram: input file is an audio.
 - Spectrogram to Audio: input file is an image.
 
