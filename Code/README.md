@@ -5,7 +5,7 @@
 - `-r is to denote if running in reconstruction mode (from spec to audio) or not`
 - `-b is number of byte representation for the spectrogram image; default is 1.`
 
-##Note: 
+## Note: 
 
 **When going from:**
 
