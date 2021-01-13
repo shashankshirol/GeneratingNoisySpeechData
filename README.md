@@ -1,4 +1,4 @@
-# Generating Noisy Data using Deep Learning methods
+# Generating Noisy Speech Data using Deep Learning methods
 
 A repository comprising of code for generation of noisy speech data from clean data using deep learning methods
 
