@@ -203,12 +203,11 @@ def main():
             phase_aslist = phase.tolist()
             phase_dict['phase'] = phase_aslist
             phase_dict['rate'] = rate
+            with open("phase_data.json", "w") as op:
+                json.dump(phase_dict, op)
 
         with open("info_data.json", "w") as op:
             json.dump(info_dict, op)
-        
-        with open("phase_data.json", "w") as op:
-            json.dump(phase_dict, op)
 
         np_img = X.astype(np.uint8)
         rgb_im = to_rgb(np_img)
@@ -220,7 +219,6 @@ def main():
             name += "noisy_"
         
         img.save(name+'out.png')
-
         pass
 
 
