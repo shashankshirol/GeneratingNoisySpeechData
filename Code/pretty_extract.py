@@ -113,11 +113,14 @@ def unscale_minmax(X, X_min, X_max, min=0.0, max=1.0):      ## to get the origii
     X += X_min
     return X
 
-def to_rgb(im):         ## converting the image into 3-channel as singan requires the image in 3-channel form
+def to_rgb(im, rgb):         ## converting the image into 3-channel for singan (if necessary)
+    if(rgb == 1):
+        return im
     w, h = im.shape
-    ret = np.empty((w, h, 3), dtype=np.uint8)
+    ret = np.empty((w, h, rgb), dtype=np.uint8)
     ret[:, :, 0] = im
-    ret[:, :, 1] = ret[:, :, 2] = ret[:, :, 0]
+    for i in range(1, rgb):
+        ret[:, :, i] = ret[:, :, 0]
     return ret
 
 ###################################################################################
@@ -127,6 +130,7 @@ def main():
     parser.add_argument("--input", "-i", help="Input Image file if reconstructing, else Input audio", type=str)
     parser.add_argument("--clean", "-c", help="Is Clean", type=int)
     parser.add_argument("--reconstruct", "-r", help="Reconstruct", type=int)
+    parser.add_argument("--rgb", "-n", help="number of channels in image", type=int, default=1)
     parser.add_argument("--bytes", "-b", help="Bytes representation for image", type=int, default=1)
     args = parser.parse_args()
 
@@ -210,7 +214,7 @@ def main():
             json.dump(info_dict, op)
 
         np_img = X.astype(np.uint8)
-        rgb_im = to_rgb(np_img)
+        rgb_im = to_rgb(np_img, args.rgb)
         img = Image.fromarray(rgb_im)
         name = ""
         if(args.clean == True):
