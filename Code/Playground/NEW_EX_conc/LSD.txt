@@ -1,0 +1,25 @@
+LSD between ground truth noise and output with 3 RATs noisy files concatenated at:
+
+start_scale=1: 15.042
+
+Observation: Only one scale is trained for the training spec of 3 concatenated files (~8 sec). Worse results at Scale = 1 than at Scale=1 with one RATs noise audio (~2sec)
+
+LSD between Output and paint image:
+
+start_scale=1: 8.1566
+
+-------------------------------------------------------------------------------------------
+
+LSD between ground truth noise and output with 2 RATs noisy files concatenated at:
+
+start_scale=1: 17.337
+start_scale=2: 17.346
+start_scale=3: 17.328
+
+Observation: LSD remains almost same at all the learned scales. influence of paint image is more than the training image in generation. The scales want to generate most paint-like images.
+
+LSD between Output and paint image:
+
+start_scale=1: 10.920
+start_scale=2: 5.628
+start_scale=3: 3.534
