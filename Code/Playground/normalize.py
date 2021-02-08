@@ -48,6 +48,8 @@ def norm_and_LSD(file1, file2):
     data1, sr1 = librosa.load(file1, sr=None)
     data2, sr2 = librosa.load(file2, sr=None)
 
+    assert sr1 == sr2
+
     print(len(data1), len(data2))
 
     ##Padd with silence to make them equal
