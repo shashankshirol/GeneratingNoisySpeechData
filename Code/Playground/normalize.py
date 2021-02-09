@@ -21,7 +21,9 @@ def calc_LSD(a, b):
         diff = torch.pow(a[:stop] - b[:stop], 2)
 
     sum_freq = torch.sqrt(torch.sum(diff, dim=1)/diff.size(1))
+
     value = torch.sum(sum_freq, dim=0) / sum_freq.size(0)
+
     return value.numpy()
 
 
@@ -44,6 +46,21 @@ def lag_finder(y1, y2, sr):
     return delay
 
 
+def normalize(sig1, sig2):
+    """sig1 is samples of the ground_truth file
+       sig2 is samples of the file to be normalized"""
+
+    ##Apply Zero-Unit normalization
+    sig1 = (sig1 - np.mean(sig1))/np.std(sig1)
+    sig2 = (sig2 - np.mean(sig2))/np.std(sig2)
+
+    ##Apply min_max normalization:
+    sig1 = skp.minmax_scale(sig1)
+    sig2 = skp.minmax_scale(sig2)
+
+    return sig1, sig2
+
+
 def norm_and_LSD(file1, file2):
     data1, sr1 = librosa.load(file1, sr=None)
     data2, sr2 = librosa.load(file2, sr=None)
@@ -60,8 +77,8 @@ def norm_and_LSD(file1, file2):
         data2 = np.append(data2, zeros)
 
     #normalizing
-    data1 = (data1 - np.mean(data1))/np.std(data1)
-    data2 = (data2 - np.mean(data2))/np.std(data2)
+    # Sig2 always the one to be normalized to match Sig1
+    data1, data2 = normalize(sig1=data1, sig2=data2)
 
     """ ###Testing cross-correlation###########
     xcorr = np.correlate(data1, data2, "full")
@@ -76,8 +93,8 @@ def norm_and_LSD(file1, file2):
         # ideally should be 0 or very close to zero
         lag_finder(data1, data2, sr=sr1)
 
-    mag_spec1 = np.abs(librosa.stft(data1, n_fft=256, hop_length=128))
-    mag_spec2 = np.abs(librosa.stft(data2, n_fft=256, hop_length=128))
+    mag_spec1 = np.abs(librosa.stft(data1, n_fft=256, hop_length=128))**2
+    mag_spec2 = np.abs(librosa.stft(data2, n_fft=256, hop_length=128))**2
 
     #print(mag_spec1.shape)
     #print(mag_spec1)
@@ -88,14 +105,5 @@ def norm_and_LSD(file1, file2):
     a = torch.from_numpy(mag_spec1)
     b = torch.from_numpy(mag_spec2)
 
-    print("LSD (log) between %s, %s = %f" % (file1, file2, calc_LSD(a, b)))
-
-    mag_spec1 = librosa.db_to_power(mag_spec1)
-    mag_spec2 = librosa.db_to_power(mag_spec2)
-
-    a = torch.from_numpy(mag_spec1)
-    b = torch.from_numpy(mag_spec2)
-
-    print("LSD (non-log) between %s, %s = %f" % (file1, file2, calc_LSD(a, b)))
-
+    print("LSD between %s, %s = %f" % (file1, file2, calc_LSD(a, b)))
     return
