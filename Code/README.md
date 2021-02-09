@@ -1,15 +1,12 @@
-## How to use `pretty_extract.py`:
+## What can `better_extract.py` do:
 
-- `python pretty_extract.py -i <input_file> -c <1|0> -r <1|0> -b <int> (optional, default 1) -n <int> (optional, default 1)`
-- `-c is to denote if the input audio is the clean variant or not; decides whether phase info is stored or not.`
-- `-r is to denote if running in reconstruction mode (from spec to audio) or not`
-- `-n is to denote the number of channels in the image`
-- `-b is number of byte representation for the spectrogram image; default is 1.`
+- Extract spectrograms from input audio files.
+- Save the spectrograms as images, while saving relevant information for successful reconstruction like phase data.
+- Reconstruct audio from the input spectrogram images by using the phase data.
+- Normalizing Signals and computing LSD.
 
-## Note: 
+### To run:
+- `python better_extract.py`
 
-**When going from:**
 
-- Audio to Spectrogram: input file is an audio.
-- Spectrogram to Audio: input file is an image.
 
