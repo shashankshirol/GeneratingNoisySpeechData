@@ -62,9 +62,9 @@ def time_and_energy_align(data1, data2, sr):
     elif(len(data2) < len(data1)):
         data2 = np.append(data2, zeros)
         padded = 2
-    print(padded)
+    
+    
     # Time Alignment
-
     # Cross-Correlation and correction of lag using the spectrograms
     spec1 = abs(librosa.stft(data1, n_fft=nfft, hop_length=hop_length, win_length=win_length, window='hamming'))
     spec2 = abs(librosa.stft(data2, n_fft=nfft, hop_length=hop_length, win_length=win_length, window='hamming'))
@@ -73,17 +73,23 @@ def time_and_energy_align(data1, data2, sr):
     n = len(energy1)
 
     corr = signal.correlate(energy2, energy1, mode='same') / np.sqrt(signal.correlate(energy1, energy1, mode='same')[int(n/2)] * signal.correlate(energy2, energy2, mode='same')[int(n/2)])
-    delay_arr = np.linspace(-0.5*n/sr, 0.5*n/sr, n)
+    delay_arr = np.linspace(-0.5*n/sr, 0.5*n/sr, n).round(decimals=6)
     
+    #print(np.argmax(corr) - corr.size//2) no. of samples to move
+
     delay = delay_arr[np.argmax(corr)]
     print('y2 lags by ' + str(delay) + ' to y1')
 
+    if(delay*sr < 0):
+        to_roll = math.ceil(delay*sr)
+    else:
+        to_roll = math.floor(delay*sr)
 
     # correcting lag
     if(padded == 1 or padded == -1): #if both signals were the same length, doesn't matter which one was rolled
-        data1 = np.roll(data1, math.floor(delay*sr))
+        data1 = np.roll(data1, to_roll)
     elif(padded == 2):
-        data2 = np.roll(data2, -math.floor(delay*sr))
+        data2 = np.roll(data2, -to_roll)
 
     #Plot Cross-correlation vs Lag; for debugging only;
     """ plt.figure()
@@ -146,10 +152,10 @@ def normalize(sig1, sig2):
 
     ## getting it back to librosa form
     samples1 = sound1.get_array_of_samples()
-    data1 = np.array(samples1).astype(np.float32) / (2**(bits_per_sample_sig1 - 1) + 1)
+    data1 = np.array(samples1).astype(np.float32) / (2**(bits_per_sample_sig1 - 1))
 
     samples2 = sound2.get_array_of_samples()
-    data2 = np.array(samples2).astype(np.float32) / (2**(bits_per_sample_sig2 - 1) + 1)
+    data2 = np.array(samples2).astype(np.float32) / (2**(bits_per_sample_sig2 - 1))
     
     return data1, data2, sample_rate1
 
