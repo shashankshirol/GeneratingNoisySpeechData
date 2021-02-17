@@ -30,28 +30,17 @@ def calc_LSD_spectrogram(a, b):
 
     return value.numpy()
 
-def calc_LSD_spectrum(a, b, n):
-    """
-        Computes LSD using the Power Spectrums (not Spectrograms)
-        Arguments:
-            a: (torch.Tensor), Power Spectrum for Signal 1
-            b: (torch.Tensor), Power Spectrum for Signal 2
-            n: length of either a/b (both are equal)
-    """
-
-    return torch.sqrt(torch.sum((a-b)**2)/n).numpy()
-
 
 def AddNoiseFloor(data):
-    frameSz = 64
-    noiseFloor = (np.random.rand(frameSz, 1) - 0.5) * 1e-5
+    frameSz = 128
+    noiseFloor = (np.random.rand(frameSz) - 0.5) * 1e-5
     numFrame = math.floor(len(data)/frameSz)
     st = 0
-    et = frameSz
+    et = frameSz-1
 
     for i in range(numFrame):
         if(np.sum(np.abs(data[st:et+1])) < 1e-5):
-            data[st:et+1] += noiseFloor
+            data[st:et+1] = data[st:et+1] + noiseFloor
         st = et + 1
         et += frameSz
 
@@ -128,8 +117,7 @@ def time_and_energy_align(data1, data2, sr):
     L1 = math.floor(0.01*len(data1))
     L2 = math.floor(0.1*len(data1))
 
-    gain_d1d2 = np.mean(
-        np.divide(sorted_data1[L1:L2+1], sorted_data2[L1:L2+1]))
+    gain_d1d2 = np.mean(np.divide(sorted_data1[L1:L2+1], sorted_data2[L1:L2+1]))
 
     #Apply gain
     data2 = data2 * gain_d1d2
@@ -202,28 +190,16 @@ def norm_and_LSD(file1, file2):
 
     n = len(data1)
 
-    s1_1 = abs(librosa.stft(data1, n_fft=nfft, hop_length=frameSz - overlapSz, win_length=frameSz, window='hamming'))**2 # Power Spectrogram
-    s2_1 = abs(librosa.stft(data2, n_fft=nfft, hop_length=frameSz - overlapSz, win_length=frameSz, window='hamming'))**2 # Power Spectrogram
-
-    _, s1_2 = signal.welch(data1, sr, window='hamming', nperseg=frameSz, noverlap=overlapSz, nfft=nfft, scaling='spectrum') # Power Spectrum
-    _, s2_2 = signal.welch(data2, sr, window='hamming', nperseg=frameSz, noverlap=overlapSz, nfft=nfft, scaling='spectrum') # Power Spectrum
+    s1 = abs(librosa.stft(data1, n_fft=nfft, hop_length=frameSz - overlapSz, win_length=frameSz, window='hamming'))**2 # Power Spectrogram
+    s2 = abs(librosa.stft(data2, n_fft=nfft, hop_length=frameSz - overlapSz, win_length=frameSz, window='hamming'))**2 # Power Spectrogram
 
     # librosa.power_todb(S) basically returns 10*log10(S)
-    s1_1 = librosa.power_to_db(s1_1)
+    s1 = librosa.power_to_db(s1)
     # librosa.power_todb(S) basically returns 10*log10(S)
-    s2_1 = librosa.power_to_db(s2_1)
+    s2 = librosa.power_to_db(s2)
 
-    # librosa.power_todb(S) basically returns 10*log10(S)
-    s1_2 = librosa.power_to_db(s1_2)
-    # librosa.power_todb(S) basically returns 10*log10(S)
-    s2_2 = librosa.power_to_db(s2_2)
+    a = torch.from_numpy(s1)
+    b = torch.from_numpy(s2)
 
-    a_1 = torch.from_numpy(s1_1)
-    b_1 = torch.from_numpy(s2_1)
-
-    a_2 = torch.from_numpy(s1_2)
-    b_2 = torch.from_numpy(s2_2)
-
-    print("LSD (Spectrogram) between %s, %s = %f" % (file1, file2, calc_LSD_spectrogram(a_1, b_1)))
-    print("LSD (Spectrum) between %s, %s = %f" % (file1, file2, calc_LSD_spectrum(a_2, b_2, n)))
+    print("LSD (Spectrogram) between %s, %s = %f" % (file1, file2, calc_LSD_spectrogram(a, b)))
     return
