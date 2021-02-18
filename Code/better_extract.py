@@ -70,12 +70,12 @@ def to_rgb(im, chann):  # converting the image into 3-channel for singan
         ret[:, :, i] = ret[:, :, 0]
     return ret
 
-def save_spec_img(filename, mag_spec, phase, sr, clean = 0):
+def save_spec_img(filename, mag_spec, phase, sr, clean = 0, pow = 1):
     name = filename.split('.')[0]
 
     #storing spec on db units(log based)
-    print(mag_spec)
-    mag_spec = librosa.power_to_db(mag_spec)
+    #print(mag_spec)
+    mag_spec = librosa.power_to_db(mag_spec**pow)
 
     X, X_min, X_max = scale_minmax(mag_spec, 0, 255)
     
@@ -108,7 +108,7 @@ def save_spec_img(filename, mag_spec, phase, sr, clean = 0):
     img.save(sav)
     return
 
-def reconstruct_from_image(filename, recon_name=None):
+def reconstruct_from_image(filename, recon_name=None, pow = 1):
     name = filename.split('.')[0]
 
     if(recon_name==None):
@@ -135,6 +135,7 @@ def reconstruct_from_image(filename, recon_name=None):
 
     ## converting db to power for reconstruction
     spec = librosa.db_to_power(new_img)
+    spec = np.power(spec, 1./pow)
 
     #print(spec.shape)
     #print(spec)
