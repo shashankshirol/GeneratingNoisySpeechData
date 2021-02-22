@@ -190,8 +190,8 @@ def norm_and_LSD(file1, file2):
 
     n = len(data1)
 
-    s1 = abs(librosa.stft(data1, n_fft=nfft, hop_length=frameSz - overlapSz, win_length=frameSz, window='hamming'))**2 # Power Spectrogram
-    s2 = abs(librosa.stft(data2, n_fft=nfft, hop_length=frameSz - overlapSz, win_length=frameSz, window='hamming'))**2 # Power Spectrogram
+    s1 = (abs(librosa.stft(data1, n_fft=nfft, window='hamming'))**2)/n # Power Spectrogram
+    s2 = (abs(librosa.stft(data2, n_fft=nfft, window='hamming'))**2)/n # Power Spectrogram
 
     # librosa.power_todb(S) basically returns 10*log10(S)
     s1 = librosa.power_to_db(s1)
