@@ -44,6 +44,7 @@ if __name__ == '__main__':
 
         #reading train_file
         real, _ = functions.read_wav_spec(opt.input_wav_train, opt)
+        #real = functions.read_wav_melspec(opt.input_wav_train, opt)
 
         real = functions.adjust_scales2image(real, opt)
         Gs, Zs, reals, NoiseAmp = functions.load_trained_pyramid(opt)
@@ -51,11 +52,10 @@ if __name__ == '__main__':
         if (opt.paint_start_scale < 1) | (opt.paint_start_scale > (len(Gs)-1)):
             print("injection scale should be between 1 and %d" % (len(Gs)-1))
         else:
-            #ref = functions.read_image_dir('%s/%s' % (opt.ref_dir, opt.ref_name), opt)
-            
+
             #reading ref_image (paint):
             ref, ref_phase, ref_sr = functions.read_wav_spec(opt.input_wav_paint, opt, need_sr = True)
-            
+
             if ref.shape[3] != real.shape[3]:
 
                 ########################################################################################

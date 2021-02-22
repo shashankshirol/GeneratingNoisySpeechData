@@ -42,7 +42,6 @@ def read_wav_spec(wav_file, opt, need_sr = False):
     data, sr = librosa.load(wav_file, sr=None)
     mag_spec, phase = librosa.magphase(librosa.stft(data, n_fft=256, window='hamming'))
     phase = np.angle(phase)
-    
     mag_spec = to_rgb(mag_spec, 3)
 
     x = np2torch(mag_spec, opt)
@@ -51,6 +50,19 @@ def read_wav_spec(wav_file, opt, need_sr = False):
         return x, phase, sr
     
     return x, phase
+
+def read_wav_melspec(wav_file, opt, need_sr = False):
+    data, sr = librosa.load(wav_file, sr=None)
+    mel_spec = librosa.feature.melspectrogram(y=data, sr=sr, n_fft=256, hop_length=64, win_length=256, window='hamming')
+    mel_spec = to_rgb(mel_spec, 3)
+    
+    x = np2torch(mel_spec, opt)
+    x = x[:, 0:3, :, :]
+
+    if(need_sr):
+        return x, sr
+
+    return x
 
 def convert_image_np(inp):
     if inp.shape[1]==3:

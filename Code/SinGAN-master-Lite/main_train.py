@@ -31,8 +31,11 @@ if __name__ == '__main__':
             pass
 
         real, _ = functions.read_wav_spec(opt.input_wav_train, opt)
+        
+        #real = functions.read_wav_melspec(opt.input_wav_train, opt)
 
         print(real.shape, type(real))
         functions.adjust_scales2image(real, opt)
         train(opt, Gs, Zs, reals, NoiseAmp, real)
+        
         #SinGAN_generate(Gs,Zs,reals,NoiseAmp,opt)
