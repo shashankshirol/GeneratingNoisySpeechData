@@ -53,7 +53,7 @@ To run this code on a cpu machine, specify `--not_cuda` when calling `main_train
 
 ###  Paint to Image
 
-To transfer a paint into a realistic image (See example in Fig. 11 in [our paper](https://arxiv.org/pdf/1905.01164.pdf)), please first train SinGAN model on the desire image (as described above), then save your paint under "Input/Paint", and run the command
+To transfer a paint into a realistic image (See example in Fig. 11 in [our paper](https://arxiv.org/pdf/1905.01164.pdf)), please first train SinGAN model on the desire image (as described above), then save your paint in the root folder, and run the command
 
 ```
 python paint2image.py --input_wav_train <training_audio_file_name> --input_wav_paint <paint_audio_file_name> --paint_start_scale <scale to inject>
