@@ -8,7 +8,6 @@ from scipy import signal
 from pydub import AudioSegment
 import math
 import random
-#from timeit import default_timer as timer
 
 
 def calc_LSD_spectrogram(a, b):
@@ -29,6 +28,29 @@ def calc_LSD_spectrogram(a, b):
     value = torch.sum(sum_freq, dim=0) / sum_freq.size(0)
 
     return value.numpy()
+
+
+def compute_mcd(data1, data2, sr):
+
+    n_fft = 256
+    win_length = 256
+    hop_length = win_length // 4
+
+    S1 = librosa.feature.melspectrogram(y=data1 , sr=sr, n_fft=n_fft, hop_length=hop_length, window='hamming', n_mels = 20, htk = True, norm = None)
+    log_S1 = librosa.power_to_db(S1)/10 # computes log10(x)
+
+    S2 = librosa.feature.melspectrogram(y=data2, sr=sr, n_fft=n_fft, hop_length=hop_length, window='hamming', n_mels = 20, htk = True, norm = None)
+    log_S2 = librosa.power_to_db(S2)/10 # computes log10(x)
+
+    mfccs_S1 = librosa.feature.mfcc(S=log_S1, sr=sr)[1:, :]
+    mfccs_S2 = librosa.feature.mfcc(S=log_S2, sr=sr)[1:, :]
+
+    mfccs_diff = mfccs_S1 - mfccs_S2
+    mfccs_diff_norm = np.linalg.norm(mfccs_diff, axis=1)
+    mcd = np.mean(mfccs_diff_norm)
+    no_frames = len(mfccs_diff_norm)
+
+    return mcd, no_frames
 
 
 def AddNoiseFloor(data):
@@ -166,39 +188,46 @@ def normalize(sig1, sig2):
     return data1, data2, sample_rate1
 
 
-def norm_and_LSD(file1, file2):
+def norm_and_Measure(file1, file2, metric = "MCD"):
     nfft = 256
     overlapSz = 128
     frameSz = 256
-    eps = 1e-9
 
     #normalizing
-    #st = timer()
+
     # Sig2 always the one to be normalized to match Sig1
     data1, data2, sr = normalize(sig1=file1, sig2=file2)
-    #en = timer()
-    #print("Time for normalizing = ", en - st)
-
-    """ ###Testing cross-correlation###########
-    xcorr = np.correlate(data1, data2, "full")
-    print(np.argmax(xcorr), type(xcorr) , np.max(xcorr))
-    print("lag = ", np.argmax(xcorr) - xcorr.size//2) """
 
     data1, data2 = time_and_energy_align(data1, data2, sr=sr)
     assert len(data1) == len(data2)
 
-    n = len(data1)
+    if(metric == "LSD"):
+        n = len(data1)
+        s1 = (abs(librosa.stft(data1, n_fft=nfft, window='hamming'))**2)/n # Power Spectrogram
+        s2 = (abs(librosa.stft(data2, n_fft=nfft, window='hamming'))**2)/n # Power Spectrogram
 
-    s1 = (abs(librosa.stft(data1, n_fft=nfft, window='hamming'))**2)/n # Power Spectrogram
-    s2 = (abs(librosa.stft(data2, n_fft=nfft, window='hamming'))**2)/n # Power Spectrogram
+        # librosa.power_todb(S) basically returns 10*log10(S)
+        s1 = librosa.power_to_db(s1)
+        # librosa.power_todb(S) basically returns 10*log10(S)
+        s2 = librosa.power_to_db(s2)
 
-    # librosa.power_todb(S) basically returns 10*log10(S)
-    s1 = librosa.power_to_db(s1 + eps)
-    # librosa.power_todb(S) basically returns 10*log10(S)
-    s2 = librosa.power_to_db(s2 + eps)
+        a = torch.from_numpy(s1)
+        b = torch.from_numpy(s2)
 
-    a = torch.from_numpy(s1)
-    b = torch.from_numpy(s2)
+        print("LSD between %s, %s = %f" % (file1, file2, calc_LSD_spectrogram(a, b)))
+    else:
+        mcd, frames = compute_mcd(data1, data2, sr)
+        print("MCD between %s, %s = %f , frames = %d" % (file1, file2, mcd, frames))
 
-    print("LSD (Spectrogram) between %s, %s = %f" % (file1, file2, calc_LSD_spectrogram(a, b)))
     return
+
+def main():
+    file1 = "fe_03_2140-01463-B-046961-047389-A_8k.wav"
+    files = ["start_scale=2.wav", "start_scale=2.wav", "start_scale=3.wav", "start_scale=4.wav", "start_scale=5.wav"]
+    files_2 = ["fe_03_2140-01463-B-046961-047389-src_out_resized_recon.wav"]
+    for f in files:
+        norm_and_Measure(file1, f, metric = "LSD")
+    pass
+
+if __name__ == "__main__":
+    main()
