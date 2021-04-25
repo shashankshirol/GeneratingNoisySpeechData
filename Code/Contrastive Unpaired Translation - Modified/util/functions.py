@@ -4,7 +4,7 @@ import soundfile as sf
 import torch
 from PIL import Image
 
-def extract(filename, sr=None, energy = 1.0):
+def extract(filename, sr=None, energy = 1.0, hop_length = 64):
     """
         Extracts spectrogram from an input audio file
         Arguments:
@@ -13,7 +13,7 @@ def extract(filename, sr=None, energy = 1.0):
     """
     data, sr = librosa.load(filename, sr=sr)
     data *= energy
-    comp_spec = librosa.stft(data, n_fft=256, window='hamming')
+    comp_spec = librosa.stft(data, n_fft=256, hop_length = hop_length, window='hamming')
 
     mag_spec, phase = librosa.magphase(comp_spec)
 
@@ -39,9 +39,14 @@ def getTimeSeries(im, img_path, pow, energy = 1.0):
 
     h, w = mag_spec.shape
     
-    im = Image.fromarray(im)
-    im = im.resize((w, h), Image.LANCZOS)
-    im = np.asarray(im).astype(np.float)
+    ######Ignoring padding
+    fix_w = 128
+    mod_fix_w = w % fix_w
+    extra_cols = 0
+    if(mod_fix_w != 0):
+        extra_cols = fix_w - mod_fix_w
+    im = im[:, :-extra_cols]
+    #########################
 
     _min, _max = log_spec.min(), log_spec.max()
 
