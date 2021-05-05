@@ -3,6 +3,9 @@ import numpy as np
 import soundfile as sf
 import torch
 from PIL import Image
+import pyloudnorm as pyln
+
+STANDARD_LUFS = -23.0
 
 def extract(filename, sr=None, energy = 1.0, hop_length = 64):
     """
@@ -13,7 +16,14 @@ def extract(filename, sr=None, energy = 1.0, hop_length = 64):
     """
     data, sr = librosa.load(filename, sr=sr)
     data *= energy
-    comp_spec = librosa.stft(data, n_fft=256, hop_length = hop_length, window='hamming')
+
+    ##Normalizing to standard -23.0 LuFS
+    meter = pyln.Meter(sr)
+    loudness = meter.integrated_loudness(data)
+    data_normalized = pyln.normalize.loudness(data, loudness, target_loudness = STANDARD_LUFS)
+    ##################################################
+
+    comp_spec = librosa.stft(data_normalized, n_fft=256, hop_length = hop_length, window='hamming')
 
     mag_spec, phase = librosa.magphase(comp_spec)
 
@@ -45,8 +55,10 @@ def getTimeSeries(im, img_path, pow, energy = 1.0):
     extra_cols = 0
     if(mod_fix_w != 0):
         extra_cols = fix_w - mod_fix_w
-    im = im[:, :-extra_cols]
+        im = im[:, :-extra_cols]
     #########################
+    print("im shape (ex. padding) = ", im.shape)
+    print("spec shape (original) = ", mag_spec.shape)
 
     _min, _max = log_spec.min(), log_spec.max()
 

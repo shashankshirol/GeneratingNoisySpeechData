@@ -30,9 +30,6 @@ import os
 from options.test_options import TestOptions
 from data import create_dataset
 from models import create_model
-from util.visualizer import save_images
-from util import html
-import util.util as util
 import ntpath
 from util.functions import denorm_and_numpy, getTimeSeries
 import soundfile as sf
@@ -69,7 +66,6 @@ def save_audio(opt, visuals_list, img_path):
         else:
             spec = np.concatenate((spec, im), axis=1) #concatenating specs to obtain original.
 
-    print(spec.shape)
     data, sr = getTimeSeries(spec, img_path, opt.spec_power, opt.energy)
     sf.write(save_path, data, sr)
 
@@ -88,12 +84,8 @@ if __name__ == '__main__':
     #opt.energy = 0.1 #To test robustness to amplitude modification during generation
 
     dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
+    opt.num_test = len(dataset)
     model = create_model(opt)      # create a model given opt.model and other options
-
-    """ # create a webpage for viewing the results
-    web_dir = os.path.join(opt.results_dir, opt.name, '{}_{}'.format(opt.phase, opt.epoch))  # define the website directory
-    print('creating web directory', web_dir)
-    webpage = html.HTML(web_dir, 'Experiment = %s, Phase = %s, Epoch = %s' % (opt.name, opt.phase, opt.epoch)) """
 
     ds_len = len(dataset)
     idx = 0

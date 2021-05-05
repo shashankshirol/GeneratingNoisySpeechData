@@ -7,6 +7,7 @@ import util.util as util
 import util.functions as functions
 import numpy as np
 import os
+import torch
 from joblib import Parallel, delayed
 import multiprocessing
 import subprocess
@@ -47,7 +48,7 @@ def split_and_save(spec, pow=1.0, state="Train"):
     np_img = X.astype(np.uint8)
 
     curr = [0]
-    while(curr[-1] <= w):
+    while(curr[-1] < w):
         temp_spec = np_img[:, curr[-1]:curr[-1] + fix_w]
         rgb_im = functions.to_rgb(temp_spec, chann=3)
         img = Image.fromarray(rgb_im)
@@ -86,9 +87,9 @@ class UnalignedDataset(BaseDataset):
     Modified: 15/04/2021 19:04 Hrs
     By: Shashank S Shirol
     Changes:This dataloader takes audio files hosted in two directories as above (instead of images).
-            MAKE SURE THESE ARE PARALLEL -- the code extracts spectrograms and splits them into square components and treats them as independent samples.
+            The code extracts spectrograms and splits them into square components and treats them as independent samples.
             The process is parallelized using threads for faster processing of the components.
-            CONTRARY TO THE FILE NAME AND CLASS NAME, THIS CODE NOW WORKS FOR PAIRED SAMPLES.
+            CONTRARY TO THE FILE NAME AND CLASS NAME, THIS CODE NOW WORKS FOR PAIRED SAMPLES AND UNPAIRED SAMPLES.
 
     """
 
@@ -99,8 +100,10 @@ class UnalignedDataset(BaseDataset):
             opt (Option class) -- stores all the experiment flags; needs to be a subclass of BaseOptions
         """
         BaseDataset.__init__(self, opt)
+
         self.dir_A = os.path.join(opt.dataroot, opt.phase + 'A')  # create a path '/path/to/data/trainA'
-        self.dir_B = os.path.join(opt.dataroot, opt.phase + 'B')  # create a path '/path/to/data/trainB'
+        if(opt.state == "Train"):
+            self.dir_B = os.path.join(opt.dataroot, opt.phase + 'B')  # create a path '/path/to/data/trainB'
 
         if opt.phase == "test" and not os.path.exists(self.dir_A) \
            and os.path.exists(os.path.join(opt.dataroot, "valA")):
@@ -108,7 +111,8 @@ class UnalignedDataset(BaseDataset):
             self.dir_B = os.path.join(opt.dataroot, "valB")
 
         self.A_paths = sorted(make_dataset(self.dir_A, opt.max_dataset_size))   # load images from '/path/to/data/trainA'
-        self.B_paths = sorted(make_dataset(self.dir_B, opt.max_dataset_size))    # load images from '/path/to/data/trainB'
+        if(opt.state == "Train"):
+            self.B_paths = sorted(make_dataset(self.dir_B, opt.max_dataset_size))    # load images from '/path/to/data/trainB'
 
         if("passcodec" in opt.preprocess):
             print("------Passing samples through g726 Codec using FFmpeg------")
@@ -126,44 +130,26 @@ class UnalignedDataset(BaseDataset):
         self.spec_power = opt.spec_power
         self.energy = opt.energy
         self.state = opt.state
-
-        self.parallel_data = True
-
+        self.parallel_data = False
         self.num_cores = multiprocessing.cpu_count()
 
         #Compute the spectrogram components parallelly to make it more efficient; uses Joblib, maintains order of input data passed.
         self.clean_specs = Parallel(n_jobs=self.num_cores, prefer="threads")(delayed(processInput)(i, self.spec_power, self.state) for i in self.A_paths)
-        self.noisy_specs = Parallel(n_jobs=self.num_cores, prefer="threads")(delayed(processInput)(i, self.spec_power, self.state) for i in self.B_paths)
 
         #calculate no. of components in each sample
         self.no_comps_clean = Parallel(n_jobs=self.num_cores, prefer="threads")(delayed(countComps)(i) for i in self.clean_specs)
-        self.no_comps_noisy = Parallel(n_jobs=self.num_cores, prefer="threads")(delayed(countComps)(i) for i in self.noisy_specs)
-
         self.clean_spec_paths = []
-        self.noisy_spec_paths = []
-
         self.clean_comp_dict = OrderedDict()
-        self.noisy_comp_dict = OrderedDict()
 
-        for nameA, countA in zip(self.A_paths, self.no_comps_clean):
+        for nameA, countA in zip(self.A_paths, self.no_comps_clean):  # Having an OrderedDict to access no. of components, so we can wait before generation to collect all components
             self.clean_spec_paths += [nameA] * countA
             self.clean_comp_dict[nameA] = countA
 
-        #Having an OrderedDict to access no. of components, so we can wait before generation to collect all components
-
-        for nameB, countB in zip(self.B_paths, self.no_comps_noisy):
-            self.noisy_spec_paths += [nameB] * countB
-            self.noisy_comp_dict[nameB] = countB
-
         ##To separate the components; will treat every component as an individual sample
         self.clean_specs = list(chain.from_iterable(self.clean_specs))
-        self.noisy_specs = list(chain.from_iterable(self.noisy_specs))
-
         self.clean_specs_len = len(self.clean_specs)
-        self.noisy_specs_len = len(self.noisy_specs)
-
         assert self.clean_specs_len == len(self.clean_spec_paths)
-        assert self.noisy_specs_len == len(self.noisy_spec_paths)
+        
 
         ##Checking what samples are loaded:
         if(self.parallel_data or self.opt.serial_batches):
@@ -173,7 +159,19 @@ class UnalignedDataset(BaseDataset):
 
         #clearing memory
         del self.no_comps_clean
-        del self.no_comps_noisy
+
+        if(self.state == "Train"): ##Preparing domainB dataset is only required if we are in the Training state; for generation, we don't require domainB
+            self.noisy_specs = Parallel(n_jobs=self.num_cores, prefer="threads")(delayed(processInput)(i, self.spec_power, self.state) for i in self.B_paths)
+            self.no_comps_noisy = Parallel(n_jobs=self.num_cores, prefer="threads")(delayed(countComps)(i) for i in self.noisy_specs)
+            self.noisy_spec_paths = []
+            self.noisy_comp_dict = OrderedDict()
+            for nameB, countB in zip(self.B_paths, self.no_comps_noisy):
+                self.noisy_spec_paths += [nameB] * countB
+                self.noisy_comp_dict[nameB] = countB
+            self.noisy_specs = list(chain.from_iterable(self.noisy_specs))
+            self.noisy_specs_len = len(self.noisy_specs)
+            assert self.noisy_specs_len == len(self.noisy_spec_paths)
+            del self.no_comps_noisy
 
     def __getitem__(self, index):
         """Return a data point and its metadata information.
@@ -181,33 +179,36 @@ class UnalignedDataset(BaseDataset):
         Parameters:
             index (int)      -- a random integer for data indexing
 
-        Returns a dictionary that contains A, B, A_paths and B_paths
+        Returns a dictionary that contains A, B, A_paths and B_paths if in 'Train' mode else only A, A_paths
             A (tensor)       -- an image in the input domain
             B (tensor)       -- its corresponding image in the target domain
-            A_paths (str)    -- image paths
-            B_paths (str)    -- image paths
+            A_paths (str)    -- file paths
+            B_paths (str)    -- file paths
         """
+
+        transform = get_transform(self.opt)
 
         index_A = index % self.clean_specs_len
         A_path = self.clean_spec_paths[index_A]  # make sure index is within then range
-        if self.opt.serial_batches or self.parallel_data:   # make sure index is within then range
-            index_B = index % self.noisy_specs_len
-        else:   # randomize the index for domain B to avoid fixed pairs.
-            index_B = random.randint(0, self.noisy_specs_len - 1)
-        B_path = self.noisy_spec_paths[index_B]
-
         A_img = self.clean_specs[index_A]
-        B_img = self.noisy_specs[index_B]
-
-        transform = get_transform(self.opt)
         A = transform(A_img)
-        B = transform(B_img)
+
+        if(self.state == "Train"):
+            if self.opt.serial_batches or self.parallel_data:   # make sure index is within then range
+                index_B = index % self.noisy_specs_len
+            else:   # randomize the index for domain B to avoid fixed pairs.
+                index_B = random.randint(0, self.noisy_specs_len - 1)
+            B_path = self.noisy_spec_paths[index_B]
+            B_img = self.noisy_specs[index_B]
+            B = transform(B_img)
+        
 
 
         if(self.state == "Train"):
             return {'A': A, 'B': B, 'A_paths': A_path, 'B_paths': B_path}
         else:
-            return {'A': A, 'B': B, 'A_paths': A_path, 'B_paths': B_path, 'A_comps': self.clean_comp_dict[A_path], 'B_comps': self.noisy_comp_dict[B_path]}
+            B = torch.rand(1) ## A random initialization (required to prepare the model for generation, refer models.py for more info); doesn't effect the generation process.
+            return {'A': A, 'A_paths': A_path, 'A_comps': self.clean_comp_dict[A_path], "B": B}
 
     def __len__(self):
         """Return the total number of images in the dataset.
