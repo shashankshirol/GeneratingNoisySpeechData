@@ -130,7 +130,7 @@ class UnalignedDataset(BaseDataset):
         self.spec_power = opt.spec_power
         self.energy = opt.energy
         self.state = opt.state
-        self.parallel_data = False
+        self.parallel_data = True if opt.parallel_data == 1 else False
         self.num_cores = multiprocessing.cpu_count()
 
         #Compute the spectrogram components parallelly to make it more efficient; uses Joblib, maintains order of input data passed.

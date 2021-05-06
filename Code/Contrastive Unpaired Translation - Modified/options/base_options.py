@@ -57,6 +57,7 @@ class BaseOptions():
         parser.add_argument('--no_flip', action='store_true', help='if specified, do not flip the images for data augmentation')
         parser.add_argument('--spec_power', type=float, default=1.0, help='number to raise the spectrogram with before applying the transforms')
         parser.add_argument('--state', type=str, default="Train", help='State of the model; decides how components are returned in the dataloader')
+        parser.add_argument('--parallel_data', type=int, default=0, help='Decides whether to take parallel data for training or to take randomly')
         parser.add_argument('--display_winsize', type=int, default=256, help='display window size for both visdom and HTML')
         parser.add_argument('--random_scale_max', type=float, default=3.0,
                             help='(used for single image translation) Randomly scale the image by the specified factor as data augmentation.')
