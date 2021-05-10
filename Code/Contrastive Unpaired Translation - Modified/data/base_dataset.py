@@ -74,14 +74,9 @@ class CustResize(object):
 def get_transform(opt, params=None, grayscale=False, method=Image.BICUBIC, convert=True):
     transform_list = []
     
-    if grayscale:
-        transform_list.append(transforms.Grayscale(1))
-    
     if 'resize' in opt.preprocess:
         osize = (opt.load_size, opt.load_size)
         transform_list.append(CustResize(osize))
-
-
 
     if not opt.no_flip:
         if params is None or 'flip' not in params:

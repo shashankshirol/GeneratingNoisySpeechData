@@ -56,6 +56,8 @@ def save_audio(opt, visuals_list, img_path):
         im = denorm_and_numpy(im_data) #De-Normalizing the output tensor to reconstruct the spectrogram
 
         #Resizing the output to 129x128 size (original splits)
+        if(im.shape[-1] == 1): #to drop last channel
+            im = im[:,:,0]
         im = Image.fromarray(im)
         im = im.resize((128, 129), Image.LANCZOS)
         im = np.asarray(im).astype(np.float)
@@ -66,7 +68,7 @@ def save_audio(opt, visuals_list, img_path):
         else:
             spec = np.concatenate((spec, im), axis=1) #concatenating specs to obtain original.
 
-    data, sr = getTimeSeries(spec, img_path, opt.spec_power, opt.energy)
+    data, sr = getTimeSeries(spec, img_path, opt.spec_power, opt.energy, state = opt.state)
     sf.write(save_path, data, sr)
 
     return
@@ -80,8 +82,10 @@ if __name__ == '__main__':
     opt.serial_batches = True  # disable data shuffling; comment this line if results on randomly chosen images are needed.
     opt.no_flip = True    # no flip; comment this line if results on flipped images are needed.
     opt.display_id = -1   # no visdom display; the test code saves the results to a HTML file.
-    
-    #opt.energy = 0.1 #To test robustness to amplitude modification during generation
+
+    if(opt.single_channel == 1):
+        opt.input_nc = 1
+        opt.output_nc = 1
 
     dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
     opt.num_test = len(dataset)

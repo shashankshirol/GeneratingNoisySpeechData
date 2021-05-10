@@ -15,7 +15,7 @@ from itertools import chain
 from collections import OrderedDict
 
 
-def split_and_save(spec, pow=1.0, state="Train"):
+def split_and_save(spec, pow=1.0, state = "Train", channels = 1):
     """
         Info: Takes a spectrogram, splits it into equal parts; uses median padding to achieve this.
         Created: 13/04/2021
@@ -50,7 +50,7 @@ def split_and_save(spec, pow=1.0, state="Train"):
     curr = [0]
     while(curr[-1] < w):
         temp_spec = np_img[:, curr[-1]:curr[-1] + fix_w]
-        rgb_im = functions.to_rgb(temp_spec, chann=3)
+        rgb_im = functions.to_rgb(temp_spec, chann = channels)
         img = Image.fromarray(rgb_im)
         spec_components.append(img)
         curr.append(curr[-1] + fix_w)
@@ -63,9 +63,9 @@ def split_and_save(spec, pow=1.0, state="Train"):
 # Parallize processing the spectrograms
 
 
-def processInput(filepath, power, state):
-    mag_spec, phase, sr = functions.extract(filepath, sr=8000, energy=1.0)
-    components = split_and_save(mag_spec, pow=power, state=state)
+def processInput(filepath, power, state, channels):
+    mag_spec, phase, sr = functions.extract(filepath, sr=8000, energy=1.0, state = state)
+    components = split_and_save(mag_spec, pow=power, state = state, channels = channels)
 
     return components
 
@@ -131,10 +131,12 @@ class UnalignedDataset(BaseDataset):
         self.energy = opt.energy
         self.state = opt.state
         self.parallel_data = True if opt.parallel_data == 1 else False
+        self.gray = True if opt.single_channel == 1 else False
+        self.channels = 1 if self.gray else 3
         self.num_cores = multiprocessing.cpu_count()
 
         #Compute the spectrogram components parallelly to make it more efficient; uses Joblib, maintains order of input data passed.
-        self.clean_specs = Parallel(n_jobs=self.num_cores, prefer="threads")(delayed(processInput)(i, self.spec_power, self.state) for i in self.A_paths)
+        self.clean_specs = Parallel(n_jobs=self.num_cores, prefer="threads")(delayed(processInput)(i, self.spec_power, self.state, self.channels) for i in self.A_paths)
 
         #calculate no. of components in each sample
         self.no_comps_clean = Parallel(n_jobs=self.num_cores, prefer="threads")(delayed(countComps)(i) for i in self.clean_specs)
@@ -161,7 +163,7 @@ class UnalignedDataset(BaseDataset):
         del self.no_comps_clean
 
         if(self.state == "Train"): ##Preparing domainB dataset is only required if we are in the Training state; for generation, we don't require domainB
-            self.noisy_specs = Parallel(n_jobs=self.num_cores, prefer="threads")(delayed(processInput)(i, self.spec_power, self.state) for i in self.B_paths)
+            self.noisy_specs = Parallel(n_jobs=self.num_cores, prefer="threads")(delayed(processInput)(i, self.spec_power, self.state, self.channels) for i in self.B_paths)
             self.no_comps_noisy = Parallel(n_jobs=self.num_cores, prefer="threads")(delayed(countComps)(i) for i in self.noisy_specs)
             self.noisy_spec_paths = []
             self.noisy_comp_dict = OrderedDict()
@@ -186,7 +188,7 @@ class UnalignedDataset(BaseDataset):
             B_paths (str)    -- file paths
         """
 
-        transform = get_transform(self.opt)
+        transform = get_transform(self.opt, grayscale= self.gray)
 
         index_A = index % self.clean_specs_len
         A_path = self.clean_spec_paths[index_A]  # make sure index is within then range

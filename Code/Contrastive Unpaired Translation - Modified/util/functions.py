@@ -7,7 +7,7 @@ import pyloudnorm as pyln
 
 STANDARD_LUFS = -23.0
 
-def extract(filename, sr=None, energy = 1.0, hop_length = 64):
+def extract(filename, sr=None, energy = 1.0, hop_length = 64, state = None):
     """
         Extracts spectrogram from an input audio file
         Arguments:
@@ -20,10 +20,10 @@ def extract(filename, sr=None, energy = 1.0, hop_length = 64):
     ##Normalizing to standard -23.0 LuFS
     meter = pyln.Meter(sr)
     loudness = meter.integrated_loudness(data)
-    data_normalized = pyln.normalize.loudness(data, loudness, target_loudness = STANDARD_LUFS)
+    data = pyln.normalize.loudness(data, loudness, target_loudness = STANDARD_LUFS)
     ##################################################
 
-    comp_spec = librosa.stft(data_normalized, n_fft=256, hop_length = hop_length, window='hamming')
+    comp_spec = librosa.stft(data, n_fft=256, hop_length = hop_length, window='hamming')
 
     mag_spec, phase = librosa.magphase(comp_spec)
 
@@ -43,8 +43,8 @@ def denorm_and_numpy(inp_tensor):
     inp_tensor = inp_tensor.cpu().numpy().astype(np.uint8) #generating Numpy ndarray
     return inp_tensor
 
-def getTimeSeries(im, img_path, pow, energy = 1.0):
-    mag_spec, phase, sr = extract(img_path[0], 8000, energy)
+def getTimeSeries(im, img_path, pow, energy = 1.0, state = None):
+    mag_spec, phase, sr = extract(img_path[0], 8000, energy, state = state)
     log_spec = power_to_db(mag_spec)
 
     h, w = mag_spec.shape
@@ -62,7 +62,8 @@ def getTimeSeries(im, img_path, pow, energy = 1.0):
 
     _min, _max = log_spec.min(), log_spec.max()
 
-    im = np.mean(im, axis=2)
+    if(len(im.shape) > 2):
+        im = np.mean(im, axis=2)
     im = np.flip(im, axis=0)
 
     im = unscale_minmax(im, float(_min), float(_max), 0, 255)
