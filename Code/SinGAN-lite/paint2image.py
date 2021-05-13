@@ -39,7 +39,7 @@ if __name__ == '__main__':
         print('task does not exist')
     else:
         try:
-            os.mkdir(dir2save)
+            os.makedirs(dir2save)
         except OSError:
             pass
 
