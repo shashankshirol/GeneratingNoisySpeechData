@@ -10,10 +10,13 @@ This directory houses some utility python scripts for loudness normalization and
 ### Note
 The script normalizes the audio files to a fixed LUFS value of -23.0 dB (this can be changed from inside the script)
 
-## LSD calculation
+## LSD calculation:
 	Usage:
 - `python LSD_cal.py`
 *The LSD score is calculated between the two files mentioned inside the script.*
 
 ### Note
 To calculate the LSD score for your files, change the file names accordingly inside the script.
+
+## Extra:
+The two files `conv8k.py` and `getwavs.py` are helper-scripts that facilitate the conversion of wav files to 8k Hz and batch copying of required wav files to specified location.
