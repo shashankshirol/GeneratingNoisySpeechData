@@ -35,8 +35,8 @@ def split_and_save(spec, pow=1.0, state = "Train", channels = 1):
     extra_cols = 0
     if(mod_fix_w != 0):
         extra_cols = fix_w - mod_fix_w
-    repeat_val = np.median(spec)
-    extra = np.full((spec.shape[0], extra_cols), repeat_val, dtype=spec.dtype)
+    last_col = spec[:, -1]
+    extra = np.reshape(np.repeat(last_col, extra_cols), (spec.shape[0], extra_cols))
     spec = np.concatenate((spec, extra), axis=1)
     ####
 
