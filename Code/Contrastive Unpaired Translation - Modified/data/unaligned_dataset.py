@@ -35,9 +35,12 @@ def split_and_save(spec, pow=1.0, state = "Train", channels = 1):
     extra_cols = 0
     if(mod_fix_w != 0):
         extra_cols = fix_w - mod_fix_w
-    last_col = spec[:, -1]
-    extra = np.reshape(np.repeat(last_col, extra_cols), (spec.shape[0], extra_cols))
-    spec = np.concatenate((spec, extra), axis=1)
+        
+    #making padding by repeating same audio (takes care of edge case where actual data < padding columns to be added)
+    num_wraps = math.ceil(extra_cols/w)
+    temp_roll = np.tile(spec, num_wraps)
+    padd=temp_roll[:,:extra_cols]
+    spec = np.concatenate((spec, padd), axis=1)
     ####
 
     spec_components = []
