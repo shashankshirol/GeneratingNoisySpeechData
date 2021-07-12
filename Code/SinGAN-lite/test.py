@@ -17,7 +17,7 @@ def make_dataset(dir, max_dataset_size=float("inf")):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataroot', default='./dataset/content/', help = "Location of the test files")
+    parser.add_argument('--dataroot', default='./datasets/content/', help = "Location of the test files")
     parser.add_argument('--name', type = str, help = "Name of the train file (used to store the model)", required = True)
     opt = parser.parse_args()
 
