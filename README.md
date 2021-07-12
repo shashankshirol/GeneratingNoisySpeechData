@@ -1,3 +1,4 @@
+
 # Generating Noisy Speech Data using Deep Learning methods
 
 A repository comprising of code for generation of noisy speech data from clean data in the frequency domain using deep learning methods.
@@ -18,3 +19,10 @@ Refer to the directories pertaining to the two architectures to learn more and t
 ## Consolidated list of important links
 - [SinGAN Paper](https://arxiv.org/pdf/1905.01164.pdf)
 - [CUT Paper](https://arxiv.org/abs/2007.15651)
+
+
+## Documentation
+
+- [SinGAN and CUT Setup](https://github.com/shashankshirol/GeneratingNoisySpeechData/blob/main/Code/CUT-SINGAN%20TRAINING%20INSTRUCTIONS.pdf)
+- [CUT Generation](https://github.com/shashankshirol/GeneratingNoisySpeechData/blob/main/Code/CUT%20Generation%20INSTRUCTIONS.pdf)
+- [SinGAN Generation](https://github.com/shashankshirol/GeneratingNoisySpeechData/blob/main/Code/SinGAN%20Generation%20INSTRUCTIONS.pdf)
